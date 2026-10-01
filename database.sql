@@ -78,11 +78,13 @@ CREATE TABLE reservasi (
 -- D6 Data Akun Pengguna
 -- tambalan celah 6: peran 'kepala' ditambah supaya Kepala Perpustakaan bisa login
 CREATE TABLE akun_pengguna (
-  id_akun CHAR(6) NOT NULL,
+  id_akun CHAR(8) NOT NULL,
   username VARCHAR(30) NOT NULL UNIQUE,
   password VARCHAR(60) NOT NULL,
-  peran ENUM('admin','petugas','kepala') NOT NULL,
-  PRIMARY KEY (id_akun)
+  peran ENUM('admin','petugas','kepala','anggota') NOT NULL,
+  id_anggota CHAR(8) NULL UNIQUE,
+  PRIMARY KEY (id_akun),
+  FOREIGN KEY (id_anggota) REFERENCES anggota(id_anggota)
 );
 
 -- D7 Data Pengadaan
@@ -108,9 +110,9 @@ CREATE TABLE detail_pengadaan (
 
 -- Data awal. Password: admin123, petugas123, kepala123
 INSERT INTO akun_pengguna VALUES
-('AKN001', 'admin', '$2y$10$GuPhG.EN.aqvD4Kq4DJDbeKihADhSysX0c7ou0/3F59dh7EkRYUT6', 'admin'),
-('AKN002', 'petugas', '$2y$10$tRTF3Wpral4sHtVtGRdwH.OG/Fffp3DxIFIgdMKh0pDeAgU8qlke2', 'petugas'),
-('AKN003', 'kepala', '$2y$10$vC23KwOYKJCyENnNIXCf9uAlI51Hjz/GLQfp72jNxglU1rU5FPwyW', 'kepala');
+('AKN00001', 'admin', '$2y$10$GuPhG.EN.aqvD4Kq4DJDbeKihADhSysX0c7ou0/3F59dh7EkRYUT6', 'admin', NULL),
+('AKN00002', 'petugas', '$2y$10$tRTF3Wpral4sHtVtGRdwH.OG/Fffp3DxIFIgdMKh0pDeAgU8qlke2', 'petugas', NULL),
+('AKN00003', 'kepala', '$2y$10$vC23KwOYKJCyENnNIXCf9uAlI51Hjz/GLQfp72jNxglU1rU5FPwyW', 'kepala', NULL);
 
 INSERT INTO buku VALUES
 ('BK00001', 'Rekayasa Perangkat Lunak', 'Roger S. Pressman', 'Andi', 2012),

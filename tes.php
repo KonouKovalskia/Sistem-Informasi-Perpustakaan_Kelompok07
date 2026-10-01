@@ -93,6 +93,7 @@ cek("5.2 password pendek ditolak", isset(kelolaAkunPengguna($db, "tambah", "ujic
 kelolaAkunPengguna($db, "tambah", "ujicoba", "rahasia123", "petugas");
 $akun = ambil($db, "SELECT * FROM akun_pengguna WHERE username = 'ujicoba'");
 cek("5.2 password disimpan sebagai hash", password_verify("rahasia123", $akun["password"]));
+cek("5.2 id akun AKN+5 digit", preg_match('/^AKN[0-9]{5}$/', $akun["id_akun"]) === 1);
 cek("5.2 username dobel ditolak", isset(kelolaAkunPengguna($db, "tambah", "ujicoba", "rahasia123", "petugas")["gagal"]));
 kelolaAkunPengguna($db, "ubah", "ujicoba", "", "kepala");
 cek("5.2 ubah peran", ambil($db, "SELECT peran FROM akun_pengguna WHERE username = 'ujicoba'")["peran"] === "kepala");

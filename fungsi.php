@@ -289,8 +289,8 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran)
         if (mysqli_fetch_assoc($hasil) !== null) {
             return ["gagal" => "Username sudah dipakai"];
         }
-        $idAkun = idBaru($db, "akun_pengguna", "id_akun", "AKN", 3);
-        mysqli_execute_query($db, "INSERT INTO akun_pengguna VALUES (?, ?, ?, ?)",
+        $idAkun = idBaru($db, "akun_pengguna", "id_akun", "AKN", 5);
+        mysqli_execute_query($db, "INSERT INTO akun_pengguna VALUES (?, ?, ?, ?, NULL)",
             [$idAkun, $username, password_hash($password, PASSWORD_DEFAULT), $peran]);
         $pesanHasil = "Akun berhasil dibuat";
     } elseif ($aksi === "ubah") {
