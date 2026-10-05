@@ -271,11 +271,12 @@ function kelolaDataBuku($db, $aksi, $data)
 }
 
 // PSPEC 5.2 Kelola Akun Pengguna
-function kelolaAkunPengguna($db, $aksi, $username, $password, $peran)
+// $idAnggota hanya diisi oleh sign up anggota (daftarAnggota)
+function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota = null)
 {
     if ($aksi === "tambah" || $aksi === "ubah") {
-        if (!in_array($peran, ["admin", "petugas", "kepala"])) {
-            return ["gagal" => "Peran harus admin, petugas, atau kepala"];
+        if (!in_array($peran, ["admin", "petugas", "kepala", "anggota"])) {
+            return ["gagal" => "Peran harus admin, petugas, kepala, atau anggota"];
         }
         if (($aksi === "tambah" || $password !== "") && strlen($password) < 8) {
             return ["gagal" => "Password minimal 8 karakter"];
@@ -285,15 +286,30 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran)
         if (!preg_match('/^[A-Za-z0-9_.]{4,30}$/', $username)) {
             return ["gagal" => "Username 4 sampai 30 karakter (huruf, angka, titik, garis bawah)"];
         }
+        if ($peran === "anggota" && $idAnggota === null) {
+            return ["gagal" => "Akun anggota harus punya data anggota"];
+        }
         $hasil = mysqli_execute_query($db, "SELECT id_akun FROM akun_pengguna WHERE username = ?", [$username]);
         if (mysqli_fetch_assoc($hasil) !== null) {
             return ["gagal" => "Username sudah dipakai"];
         }
         $idAkun = idBaru($db, "akun_pengguna", "id_akun", "AKN", 5);
-        mysqli_execute_query($db, "INSERT INTO akun_pengguna VALUES (?, ?, ?, ?, NULL)",
-            [$idAkun, $username, password_hash($password, PASSWORD_DEFAULT), $peran]);
+        mysqli_execute_query($db, "INSERT INTO akun_pengguna VALUES (?, ?, ?, ?, ?)",
+            [$idAkun, $username, password_hash($password, PASSWORD_DEFAULT), $peran, $idAnggota]);
         $pesanHasil = "Akun berhasil dibuat";
     } elseif ($aksi === "ubah") {
+        $hasil = mysqli_execute_query($db, "SELECT peran, id_anggota FROM akun_pengguna WHERE username = ?", [$username]);
+        $akun = mysqli_fetch_assoc($hasil);
+        if ($akun === null) {
+            return ["gagal" => "Akun tidak ditemukan"];
+        }
+        // admin tidak boleh mengunci dirinya sendiri di luar
+        if ($username === ($_SESSION["username"] ?? "") && $peran !== $akun["peran"]) {
+            return ["gagal" => "Tidak bisa mengubah peran akun sendiri"];
+        }
+        if ($peran === "anggota" && $akun["id_anggota"] === null) {
+            return ["gagal" => "Akun ini tidak punya data anggota"];
+        }
         if ($password !== "") {
             mysqli_execute_query($db, "UPDATE akun_pengguna SET password = ? WHERE username = ?", [password_hash($password, PASSWORD_DEFAULT), $username]);
         }
@@ -303,6 +319,7 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran)
         if ($username === ($_SESSION["username"] ?? "")) {
             return ["gagal" => "Akun yang sedang dipakai tidak bisa dihapus"];
         }
+        // baris anggota dan riwayatnya tetap ada, hanya login yang dihapus
         mysqli_execute_query($db, "DELETE FROM akun_pengguna WHERE username = ?", [$username]);
         $pesanHasil = "Akun berhasil dihapus";
     } else {

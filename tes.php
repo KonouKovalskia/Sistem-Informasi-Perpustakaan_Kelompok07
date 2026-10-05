@@ -4,6 +4,9 @@
 require "koneksi.php";
 require "fungsi.php";
 header("Content-Type: text/plain");
+// Uji mengisi $_SESSION sendiri; session browser yang sedang login tidak ikut berubah
+session_write_close();
+$_SESSION = [];
 
 $gagal = 0;
 function cek($nama, $kondisi)
@@ -99,6 +102,14 @@ kelolaAkunPengguna($db, "ubah", "ujicoba", "", "kepala");
 cek("5.2 ubah peran", ambil($db, "SELECT peran FROM akun_pengguna WHERE username = 'ujicoba'")["peran"] === "kepala");
 kelolaAkunPengguna($db, "hapus", "ujicoba", "", "");
 cek("5.2 hapus akun", ambil($db, "SELECT COUNT(*) AS n FROM akun_pengguna WHERE username = 'ujicoba'")["n"] == 0);
+cek("5.2 akun anggota tanpa data anggota ditolak", isset(kelolaAkunPengguna($db, "tambah", "ujicoba2", "rahasia123", "anggota")["gagal"]));
+cek("5.2 akun staf tidak bisa jadi anggota", isset(kelolaAkunPengguna($db, "ubah", "petugas", "", "anggota")["gagal"]));
+cek("5.2 akun tidak ada ditolak", isset(kelolaAkunPengguna($db, "ubah", "tidakada", "", "petugas")["gagal"]));
+$_SESSION["username"] = "admin";
+cek("5.2 ubah peran sendiri ditolak", isset(kelolaAkunPengguna($db, "ubah", "admin", "", "petugas")["gagal"]));
+cek("5.2 peran sendiri tetap admin", ambil($db, "SELECT peran FROM akun_pengguna WHERE username = 'admin'")["peran"] === "admin");
+cek("5.2 ubah password sendiri boleh", !isset(kelolaAkunPengguna($db, "ubah", "admin", "passwordbaru1", "admin")["gagal"]));
+$_SESSION = [];
 
 // usulan (celah 4), 6.1, 6.2, 6.3
 $eksemplarAwal = ambil($db, "SELECT COUNT(*) AS n FROM eksemplar WHERE id_buku = 'BK00001'")["n"];
