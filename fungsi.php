@@ -329,6 +329,25 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota
     return ["username" => $username, "aksi" => $aksi, "pesan_hasil" => $pesanHasil];
 }
 
+// Sign up anggota: 1.1 Registrasi Anggota Baru ditambah akun peran anggota (RANCANGAN-SIGNUP 3.1)
+// Tidak membuka transaksi; kalau gagal, pemanggil yang me-rollback supaya baris anggota tidak tertinggal
+function daftarAnggota($db, $data)
+{
+    if ($data["password"] !== $data["ulangi_password"]) {
+        return ["gagal" => "Password dan ulangi password tidak sama"];
+    }
+    $kartu = registrasiAnggota($db, $data["nama_anggota"], $data["alamat"], $data["no_telepon"], $data["email"]);
+    if (isset($kartu["gagal"])) {
+        return $kartu;
+    }
+    $akun = kelolaAkunPengguna($db, "tambah", $data["username"], $data["password"], "anggota", $kartu["id_anggota"]);
+    if (isset($akun["gagal"])) {
+        return $akun;
+    }
+    // Kartu Anggota
+    return $kartu + ["username" => $data["username"]];
+}
+
 // tambalan celah 4: Admin/Petugas membuat usulan, $daftarBuku = [id_buku => jumlah_pesan]
 function usulPengadaan($db, $daftarBuku)
 {

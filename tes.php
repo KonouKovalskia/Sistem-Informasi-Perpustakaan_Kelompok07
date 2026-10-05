@@ -111,6 +111,28 @@ cek("5.2 peran sendiri tetap admin", ambil($db, "SELECT peran FROM akun_pengguna
 cek("5.2 ubah password sendiri boleh", !isset(kelolaAkunPengguna($db, "ubah", "admin", "passwordbaru1", "admin")["gagal"]));
 $_SESSION = [];
 
+// sign up anggota (RANCANGAN-SIGNUP 3.1)
+$isianDaftar = ["username" => "anggota.uji", "password" => "rahasia123", "ulangi_password" => "rahasia123",
+    "nama_anggota" => "Anggota Uji", "alamat" => "Bandung", "no_telepon" => "081234567892", "email" => ""];
+cek("sign up password beda ditolak", isset(daftarAnggota($db, ["ulangi_password" => "lain12345"] + $isianDaftar)["gagal"]));
+cek("sign up telepon salah ditolak", isset(daftarAnggota($db, ["no_telepon" => "08ab"] + $isianDaftar)["gagal"]));
+$jumlahAnggota = ambil($db, "SELECT COUNT(*) AS n FROM anggota")["n"];
+// daftar.php me-rollback kalau gagal; di sini ditiru dengan savepoint
+mysqli_query($db, "SAVEPOINT sebelum_daftar");
+cek("sign up username dipakai (beda huruf besar) ditolak", isset(daftarAnggota($db, ["username" => "ADMIN"] + $isianDaftar)["gagal"]));
+mysqli_query($db, "ROLLBACK TO SAVEPOINT sebelum_daftar");
+cek("sign up gagal tidak meninggalkan anggota", ambil($db, "SELECT COUNT(*) AS n FROM anggota")["n"] == $jumlahAnggota);
+$daftar = daftarAnggota($db, $isianDaftar);
+$akunBaru = ambil($db, "SELECT * FROM akun_pengguna WHERE username = 'anggota.uji'");
+cek("sign up membuat akun anggota yang terhubung", $akunBaru["peran"] === "anggota" && $akunBaru["id_anggota"] === $daftar["id_anggota"]);
+cek("sign up id akun AKN+5 digit", preg_match('/^AKN[0-9]{5}$/', $akunBaru["id_akun"]) === 1);
+cek("sign up password disimpan sebagai hash", password_verify("rahasia123", $akunBaru["password"]));
+cek("sign up kartu anggota", preg_match('/^AGT[0-9]{5}$/', $daftar["id_anggota"]) === 1 && $daftar["username"] === "anggota.uji");
+cek("sign up anggota langsung aktif", cekStatusAnggota($db, $daftar["id_anggota"])["valid"] === true);
+cek("5.2 akun anggota hasil sign up bisa dinaikkan", !isset(kelolaAkunPengguna($db, "ubah", "anggota.uji", "", "petugas")["gagal"]));
+cek("5.2 dan diturunkan lagi", !isset(kelolaAkunPengguna($db, "ubah", "anggota.uji", "", "anggota")["gagal"]));
+$anggotaUji = $daftar["id_anggota"];
+
 // usulan (celah 4), 6.1, 6.2, 6.3
 $eksemplarAwal = ambil($db, "SELECT COUNT(*) AS n FROM eksemplar WHERE id_buku = 'BK00001'")["n"];
 cek("usulan kosong ditolak", isset(usulPengadaan($db, ["BK00001" => "0"])["gagal"]));
