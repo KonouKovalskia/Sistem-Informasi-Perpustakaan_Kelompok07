@@ -220,6 +220,12 @@ function catatReservasi($db, $permintaan)
     if ($buku["jumlah_tersedia"] > 0) {
         return ["gagal" => "Buku masih tersedia, bisa langsung dipinjam"];
     }
+    // satu anggota tidak boleh punya dua reservasi aktif untuk buku yang sama
+    $hasil = mysqli_execute_query($db, "SELECT id_reservasi FROM reservasi WHERE id_anggota = ? AND id_buku = ?
+        AND status_reservasi IN ('menunggu', 'siap diambil')", [$permintaan["id_anggota"], $permintaan["id_buku"]]);
+    if (mysqli_fetch_assoc($hasil) !== null) {
+        return ["gagal" => "Anggota sudah punya reservasi aktif untuk buku ini"];
+    }
     $idReservasi = idBaru($db, "reservasi", "id_reservasi", "RSV", 6);
     mysqli_execute_query($db, "INSERT INTO reservasi VALUES (?, ?, ?, ?, 'menunggu')",
         [$idReservasi, $permintaan["id_anggota"], $permintaan["id_buku"], $permintaan["tanggal_reservasi"]]);
@@ -428,4 +434,44 @@ function terimaBuku($db, $noFaktur, $idPengadaan, $daftarBukuDiterima)
     mysqli_execute_query($db, "UPDATE pengadaan SET no_faktur = ?, tanggal_terima = ?, status_pengadaan = 'diterima' WHERE id_pengadaan = ?",
         [$noFaktur, date("Y-m-d"), $idPengadaan]);
     return ["id_pengadaan" => $idPengadaan];
+}
+
+// Katalog untuk anggota (RANCANGAN-SIGNUP 4.1), membaca D2
+function cariBuku($db, $kata)
+{
+    $pola = "%" . $kata . "%";
+    $hasil = mysqli_execute_query($db, "SELECT b.id_buku, b.judul, b.pengarang, b.penerbit, b.tahun_terbit,
+        COUNT(CASE WHEN e.status_eksemplar = 'tersedia' THEN 1 END) AS tersedia
+        FROM buku b LEFT JOIN eksemplar e ON e.id_buku = b.id_buku
+        WHERE b.judul LIKE ? OR b.pengarang LIKE ?
+        GROUP BY b.id_buku, b.judul, b.pengarang, b.penerbit, b.tahun_terbit
+        ORDER BY b.judul", [$pola, $pola]);
+    return mysqli_fetch_all($hasil, MYSQLI_ASSOC);
+}
+
+// Info Pinjaman Anggota (RANCANGAN-SIGNUP 4.2), membaca D3, D4, D5 milik satu anggota
+function infoPinjamanAnggota($db, $idAnggota)
+{
+    $hasil = mysqli_execute_query($db, "SELECT p.id_peminjaman, p.id_eksemplar, b.judul, p.tanggal_pinjam, p.tanggal_jatuh_tempo
+        FROM peminjaman p JOIN eksemplar e ON e.id_eksemplar = p.id_eksemplar JOIN buku b ON b.id_buku = e.id_buku
+        WHERE p.id_anggota = ? AND p.status_peminjaman = 'dipinjam' ORDER BY p.tanggal_jatuh_tempo", [$idAnggota]);
+    $pinjaman = mysqli_fetch_all($hasil, MYSQLI_ASSOC);
+    foreach ($pinjaman as $i => $p) {
+        $pinjaman[$i]["terlambat"] = $p["tanggal_jatuh_tempo"] < date("Y-m-d");
+    }
+    $hasil = mysqli_execute_query($db, "SELECT d.id_denda, d.id_peminjaman, d.jumlah_hari_terlambat, d.nominal_denda, d.status_bayar
+        FROM denda d JOIN peminjaman p ON p.id_peminjaman = d.id_peminjaman
+        WHERE p.id_anggota = ? ORDER BY d.id_denda DESC", [$idAnggota]);
+    $denda = mysqli_fetch_all($hasil, MYSQLI_ASSOC);
+    $belumLunas = 0;
+    foreach ($denda as $d) {
+        if ($d["status_bayar"] === "belum lunas") {
+            $belumLunas += $d["nominal_denda"];
+        }
+    }
+    $hasil = mysqli_execute_query($db, "SELECT r.id_reservasi, b.judul, r.tanggal_reservasi, r.status_reservasi
+        FROM reservasi r JOIN buku b ON b.id_buku = r.id_buku
+        WHERE r.id_anggota = ? ORDER BY r.id_reservasi DESC", [$idAnggota]);
+    $reservasi = mysqli_fetch_all($hasil, MYSQLI_ASSOC);
+    return ["pinjaman" => $pinjaman, "denda" => $denda, "reservasi" => $reservasi, "denda_belum_lunas" => $belumLunas];
 }

@@ -133,6 +133,27 @@ cek("5.2 akun anggota hasil sign up bisa dinaikkan", !isset(kelolaAkunPengguna($
 cek("5.2 dan diturunkan lagi", !isset(kelolaAkunPengguna($db, "ubah", "anggota.uji", "", "anggota")["gagal"]));
 $anggotaUji = $daftar["id_anggota"];
 
+// katalog dan pinjaman anggota (RANCANGAN-SIGNUP 4.1 dan 4.2)
+cek("katalog kata kosong = semua buku", count(cariBuku($db, "")) == ambil($db, "SELECT COUNT(*) AS n FROM buku")["n"]);
+cek("katalog cari pengarang", array_column(cariBuku($db, "fathansyah"), "id_buku") === ["BK00002"]);
+cek("katalog karakter khusus tidak error", cariBuku($db, "'%_") === []);
+$pinjamUji = catatPeminjaman($db, "BK00002-01", $anggotaUji);
+cek("katalog BK00002 tersedia 0", cariBuku($db, "Basis Data")[0]["tersedia"] == 0);
+$info = infoPinjamanAnggota($db, $anggotaUji);
+cek("pinjaman saya berisi 1 pinjaman aktif", count($info["pinjaman"]) === 1 && $info["pinjaman"][0]["id_peminjaman"] === $pinjamUji["id_peminjaman"]);
+cek("pinjaman saya belum terlambat", $info["pinjaman"][0]["terlambat"] === false);
+cek("pinjaman saya tanpa denda", $info["denda"] === [] && $info["denda_belum_lunas"] === 0);
+mysqli_execute_query($db, "UPDATE peminjaman SET tanggal_jatuh_tempo = ? WHERE id_peminjaman = ?", [date("Y-m-d", strtotime("-1 day")), $pinjamUji["id_peminjaman"]]);
+cek("pinjaman saya terlambat", infoPinjamanAnggota($db, $anggotaUji)["pinjaman"][0]["terlambat"] === true);
+$rsvBudi = catatReservasi($db, terimaPermintaanReservasi($budi, "BK00002"));
+cek("reservasi anggota lain tercatat", ($rsvBudi["status_reservasi"] ?? "") === "menunggu");
+cek("reservasi ganda ditolak", isset(catatReservasi($db, terimaPermintaanReservasi($budi, "BK00002"))["gagal"]));
+cek("pinjaman saya tidak memuat reservasi orang lain", infoPinjamanAnggota($db, $anggotaUji)["reservasi"] === []);
+$infoBudi = infoPinjamanAnggota($db, $budi);
+cek("pinjaman saya memuat reservasi sendiri", in_array($rsvBudi["id_reservasi"], array_column($infoBudi["reservasi"], "id_reservasi")));
+cek("pinjaman saya memuat denda lunas", count($infoBudi["denda"]) === 1 && $infoBudi["denda"][0]["status_bayar"] === "lunas" && $infoBudi["denda_belum_lunas"] === 0);
+cek("pinjaman saya tidak memuat yang sudah dikembalikan", $infoBudi["pinjaman"] === []);
+
 // usulan (celah 4), 6.1, 6.2, 6.3
 $eksemplarAwal = ambil($db, "SELECT COUNT(*) AS n FROM eksemplar WHERE id_buku = 'BK00001'")["n"];
 cek("usulan kosong ditolak", isset(usulPengadaan($db, ["BK00001" => "0"])["gagal"]));
