@@ -1,5 +1,7 @@
 <?php
 // Koneksi database dan fungsi bantu yang dipakai semua halaman
+// cookie login tidak bisa dibaca JavaScript dan tidak ikut dikirim dari form situs lain
+session_set_cookie_params(["httponly" => true, "samesite" => "Lax", "secure" => isset($_SERVER["HTTPS"])]);
 session_start();
 date_default_timezone_set("Asia/Jakarta");
 
@@ -8,6 +10,17 @@ $db = mysqli_connect("localhost", "root", "", "perpustakaan");
 // Istilah lokal di PSPEC 2.2 dan 3.2.2
 const LAMA_PINJAM = 7;
 const TARIF_DENDA = 1000;
+
+// halaman pertama setelah login, per peran
+const HALAMAN_AWAL = ["petugas" => "anggota.php", "admin" => "buku.php", "kepala" => "laporan.php", "anggota" => "katalog.php"];
+
+function masukSesi($username, $peran, $idAnggota)
+{
+    session_regenerate_id(true);
+    $_SESSION["username"] = $username;
+    $_SESSION["peran"] = $peran;
+    $_SESSION["id_anggota"] = $idAnggota;
+}
 
 function e($teks)
 {
@@ -42,9 +55,23 @@ function tambahEksemplar($db, $idBuku, $jumlah)
 }
 
 // tambalan celah 6: halaman hanya untuk peran tertentu
+// Peran dibaca ulang dari database, jadi akun yang diubah atau dihapus admin langsung terdampak
 function wajibLogin(...$peran)
 {
-    if (!isset($_SESSION["peran"]) || !in_array($_SESSION["peran"], $peran)) {
+    global $db;
+    $akun = null;
+    if (isset($_SESSION["username"])) {
+        $hasil = mysqli_execute_query($db, "SELECT peran, id_anggota FROM akun_pengguna WHERE username = ?", [$_SESSION["username"]]);
+        $akun = mysqli_fetch_assoc($hasil);
+    }
+    if ($akun === null) {
+        $_SESSION = [];
+        header("Location: index.php");
+        exit;
+    }
+    $_SESSION["peran"] = $akun["peran"];
+    $_SESSION["id_anggota"] = $akun["id_anggota"];
+    if (!in_array($akun["peran"], $peran)) {
         header("Location: index.php");
         exit;
     }
@@ -56,6 +83,7 @@ function awalHalaman($judul)
         "petugas" => ["anggota.php" => "Anggota", "peminjaman.php" => "Peminjaman", "pengembalian.php" => "Pengembalian & Denda", "reservasi.php" => "Reservasi", "pengadaan.php" => "Pengadaan"],
         "admin" => ["buku.php" => "Data Buku", "akun.php" => "Akun Pengguna", "pengadaan.php" => "Pengadaan"],
         "kepala" => ["laporan.php" => "Laporan", "pengadaan.php" => "Pengadaan"],
+        "anggota" => ["katalog.php" => "Katalog", "pinjaman-saya.php" => "Pinjaman Saya"],
     ];
     ?>
 <!DOCTYPE html>

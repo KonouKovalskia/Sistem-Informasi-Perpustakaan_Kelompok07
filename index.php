@@ -1,22 +1,19 @@
 <?php
-// tambalan celah 6: login Admin, Petugas, dan Kepala Perpustakaan
+// tambalan celah 6: login semua pengguna (Admin, Petugas, Kepala, Anggota)
 require "koneksi.php";
 
-$halamanAwal = ["petugas" => "anggota.php", "admin" => "buku.php", "kepala" => "laporan.php"];
 if (isset($_SESSION["peran"])) {
-    header("Location: " . $halamanAwal[$_SESSION["peran"]]);
+    header("Location: " . HALAMAN_AWAL[$_SESSION["peran"]]);
     exit;
 }
 
 $pesan = "";
 if (isset($_POST["username"])) {
-    $hasil = mysqli_execute_query($db, "SELECT username, password, peran FROM akun_pengguna WHERE username = ?", [$_POST["username"]]);
+    $hasil = mysqli_execute_query($db, "SELECT username, password, peran, id_anggota FROM akun_pengguna WHERE username = ?", [$_POST["username"]]);
     $akun = mysqli_fetch_assoc($hasil);
     if ($akun !== null && password_verify($_POST["password"], $akun["password"])) {
-        session_regenerate_id(true);
-        $_SESSION["username"] = $akun["username"];
-        $_SESSION["peran"] = $akun["peran"];
-        header("Location: " . $halamanAwal[$akun["peran"]]);
+        masukSesi($akun["username"], $akun["peran"], $akun["id_anggota"]);
+        header("Location: " . HALAMAN_AWAL[$akun["peran"]]);
         exit;
     }
     $pesan = "Username atau password salah.";
@@ -49,6 +46,8 @@ if (isset($_POST["username"])) {
                             </div>
                             <button class="btn btn-primary w-100" type="submit">Masuk</button>
                         </form>
+                        <p class="mt-3 mb-1 small">Belum punya akun? <a href="daftar.php">Daftar</a></p>
+                        <p class="mb-0 small text-muted">Lupa password? Hubungi admin.</p>
                     </div>
                 </div>
             </div>
