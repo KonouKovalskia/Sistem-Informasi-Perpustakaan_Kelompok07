@@ -71,7 +71,7 @@ Jalankan berurutan dari data awal (impor ulang `database.sql` dulu). Hasil yang 
 | 16 | (belum login) | Klik Daftar, isi semua data, ulangi password berbeda | Pesan "Password dan ulangi password tidak sama", isian lain tetap terisi |
 | 17 | (belum login) | Daftar dengan username `admin` | Pesan "Username sudah dipakai" |
 | 18 | (belum login) | Daftar dengan username baru `siti.a` | Masuk ke Katalog, pesan "Pendaftaran berhasil. ID anggota: AGT00002" |
-| 19 | siti.a | Katalog: cari `PHP`, lalu Reservasi | Hanya buku yang tersedia 0 punya tombol Reservasi; reservasi tercatat status menunggu. Klik lagi: ditolak, reservasi aktif sudah ada |
+| 19 | petugas, lalu siti.a | Petugas: Peminjaman `AGT00001` + `BK00003` (buku sudah kembali di skenario 8). Lalu siti.a: Katalog, cari `PHP`, klik Reservasi, lalu klik Reservasi lagi | Hanya buku yang tersedia 0 punya tombol Reservasi; reservasi `RSV000002` tercatat status menunggu. Klik kedua ditolak: "Anggota sudah punya reservasi aktif untuk buku ini" |
 | 20 | siti.a | Pinjaman Saya | Tiga tabel tampil, reservasi tadi ada, tidak ada data AGT00001 |
 | 21 | siti.a | Buka `localhost/perpustakaan/buku.php` lewat alamat | Kembali ke Katalog |
 | 22 | admin | Akun Pengguna: ubah `siti.a` jadi petugas; ubah peran `admin` sendiri | `siti.a` berubah (ID anggota tetap tampil); peran sendiri ditolak. Di jendela `siti.a`, muat ulang: pindah ke halaman petugas |
