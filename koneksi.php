@@ -55,13 +55,15 @@ function tambahEksemplar($db, $idBuku, $jumlah)
 }
 
 // tambalan celah 6: halaman hanya untuk peran tertentu
-// Peran dibaca ulang dari database, jadi akun yang diubah atau dihapus admin langsung terdampak
+// Peran dibaca ulang dari database, jadi akun yang diubah atau dihapus admin langsung terdampak.
+// id_anggota ikut dicocokkan supaya sesi akun yang dihapus tidak berpindah ke pendaftar baru dengan username yang sama.
 function wajibLogin(...$peran)
 {
     global $db;
     $akun = null;
     if (isset($_SESSION["username"])) {
-        $hasil = mysqli_execute_query($db, "SELECT peran, id_anggota FROM akun_pengguna WHERE username = ?", [$_SESSION["username"]]);
+        $hasil = mysqli_execute_query($db, "SELECT peran FROM akun_pengguna WHERE username = ? AND id_anggota <=> ?",
+            [$_SESSION["username"], $_SESSION["id_anggota"] ?? null]);
         $akun = mysqli_fetch_assoc($hasil);
     }
     if ($akun === null) {
@@ -70,7 +72,6 @@ function wajibLogin(...$peran)
         exit;
     }
     $_SESSION["peran"] = $akun["peran"];
-    $_SESSION["id_anggota"] = $akun["id_anggota"];
     if (!in_array($akun["peran"], $peran)) {
         header("Location: index.php");
         exit;

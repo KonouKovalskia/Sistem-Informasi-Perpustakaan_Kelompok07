@@ -310,7 +310,7 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota
             return ["gagal" => "Akun tidak ditemukan"];
         }
         // admin tidak boleh mengunci dirinya sendiri di luar
-        if ($username === ($_SESSION["username"] ?? "") && $peran !== $akun["peran"]) {
+        if (strcasecmp($username, $_SESSION["username"] ?? "") === 0 && $peran !== $akun["peran"]) {
             return ["gagal" => "Tidak bisa mengubah peran akun sendiri"];
         }
         if ($peran === "anggota" && $akun["id_anggota"] === null) {
@@ -322,7 +322,7 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota
         mysqli_execute_query($db, "UPDATE akun_pengguna SET peran = ? WHERE username = ?", [$peran, $username]);
         $pesanHasil = "Akun berhasil diubah";
     } elseif ($aksi === "hapus") {
-        if ($username === ($_SESSION["username"] ?? "")) {
+        if (strcasecmp($username, $_SESSION["username"] ?? "") === 0) {
             return ["gagal" => "Akun yang sedang dipakai tidak bisa dihapus"];
         }
         // baris anggota dan riwayatnya tetap ada, hanya login yang dihapus
