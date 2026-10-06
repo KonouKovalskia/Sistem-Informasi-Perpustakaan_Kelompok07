@@ -57,6 +57,7 @@ function tambahEksemplar($db, $idBuku, $jumlah)
 // tambalan celah 6: halaman hanya untuk peran tertentu
 // Peran dibaca ulang dari database, jadi akun yang diubah atau dihapus admin langsung terdampak.
 // id_anggota ikut dicocokkan supaya sesi akun yang dihapus tidak berpindah ke pendaftar baru dengan username yang sama.
+// Batasan: akun staf yang dihapus lalu dibuat ulang admin dengan username sama masih cocok dengan sesi lama, karena id_anggota keduanya kosong.
 function wajibLogin(...$peran)
 {
     global $db;

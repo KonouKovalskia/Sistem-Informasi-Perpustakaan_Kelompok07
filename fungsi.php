@@ -304,13 +304,14 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota
             [$idAkun, $username, password_hash($password, PASSWORD_DEFAULT), $peran, $idAnggota]);
         $pesanHasil = "Akun berhasil dibuat";
     } elseif ($aksi === "ubah") {
-        $hasil = mysqli_execute_query($db, "SELECT peran, id_anggota FROM akun_pengguna WHERE username = ?", [$username]);
+        $hasil = mysqli_execute_query($db, "SELECT username, peran, id_anggota FROM akun_pengguna WHERE username = ?", [$username]);
         $akun = mysqli_fetch_assoc($hasil);
         if ($akun === null) {
             return ["gagal" => "Akun tidak ditemukan"];
         }
         // admin tidak boleh mengunci dirinya sendiri di luar
-        if (strcasecmp($username, $_SESSION["username"] ?? "") === 0 && $peran !== $akun["peran"]) {
+        // dibandingkan dengan username yang tersimpan, karena pencarian MySQL tidak membedakan huruf besar dan aksen
+        if ($akun["username"] === ($_SESSION["username"] ?? "") && $peran !== $akun["peran"]) {
             return ["gagal" => "Tidak bisa mengubah peran akun sendiri"];
         }
         if ($peran === "anggota" && $akun["id_anggota"] === null) {
@@ -322,7 +323,9 @@ function kelolaAkunPengguna($db, $aksi, $username, $password, $peran, $idAnggota
         mysqli_execute_query($db, "UPDATE akun_pengguna SET peran = ? WHERE username = ?", [$peran, $username]);
         $pesanHasil = "Akun berhasil diubah";
     } elseif ($aksi === "hapus") {
-        if (strcasecmp($username, $_SESSION["username"] ?? "") === 0) {
+        $hasil = mysqli_execute_query($db, "SELECT username FROM akun_pengguna WHERE username = ?", [$username]);
+        $akun = mysqli_fetch_assoc($hasil);
+        if ($akun !== null && $akun["username"] === ($_SESSION["username"] ?? "")) {
             return ["gagal" => "Akun yang sedang dipakai tidak bisa dihapus"];
         }
         // baris anggota dan riwayatnya tetap ada, hanya login yang dihapus

@@ -112,6 +112,8 @@ cek("5.2 ubah password sendiri boleh", !isset(kelolaAkunPengguna($db, "ubah", "a
 cek("5.2 ubah peran sendiri beda huruf besar ditolak", isset(kelolaAkunPengguna($db, "ubah", "ADMIN", "", "petugas")["gagal"]));
 cek("5.2 hapus akun sendiri beda huruf besar ditolak", isset(kelolaAkunPengguna($db, "hapus", "ADMIN", "", "")["gagal"]));
 cek("5.2 akun admin masih ada", ambil($db, "SELECT peran FROM akun_pengguna WHERE username = 'admin'")["peran"] === "admin");
+cek("5.2 hapus akun sendiri dengan aksen ditolak", isset(kelolaAkunPengguna($db, "hapus", "ádmin", "", "")["gagal"]));
+cek("5.2 ubah peran sendiri dengan aksen ditolak", isset(kelolaAkunPengguna($db, "ubah", "ádmin", "", "petugas")["gagal"]));
 $_SESSION = [];
 
 // sign up anggota (RANCANGAN-SIGNUP 3.1)
